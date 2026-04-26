@@ -1,6 +1,10 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+/* =========================================================
+   STRUCTURES
+   ========================================================= */
+// Structure to store user details
 struct User {
     int userID;
     char username[20];
@@ -8,11 +12,16 @@ struct User {
     float balance;
     float loan;
 };
+// Structure to store transaction records
 struct Transaction {
     char username[20];
     char type[10];
     float amount;
 };
+/* =========================================================
+   USER ID CHECK FUNCTION
+   ========================================================= */
+// Checks whether a given user ID already exists
 int userIDExists(int id)
 {
     FILE *fp = fopen("user.dat", "rb");
@@ -26,6 +35,42 @@ int userIDExists(int id)
         if(u.userID == id)
         {
             fclose(fp);
+            return 1;   // ID exists
+
+        }
+    }
+
+    fclose(fp);
+    return 0;  // ID does not exist
+};
+// Login panel for the user inputs user ID and password and searches in user.dat file
+int loginUser(struct User *loggedInUser)
+{
+    FILE *fp = fopen("user.dat", "rb");
+    struct User u;
+    int id;
+    char pass[20];
+
+    if(fp == NULL)
+    {
+         printf("\n*****************************************************************************\n");
+        printf("!!!!!!!!!!!!!!NO USERS FOUND!!!!!!!!!!!!!!");
+         printf("\n*****************************************************************************\n");
+        return 0;
+    }
+
+    printf("ENTER USER ID: ");
+    scanf("%d", &id);
+
+    printf("ENTER PASSWORD: ");
+    scanf(" %19s", pass);
+
+    while(fread(&u, sizeof(u), 1, fp))
+    {
+        if(u.userID == id && strcmp(u.password, pass) == 0)
+        {
+            *loggedInUser = u;
+            fclose(fp);
             return 1;
         }
     }
@@ -33,6 +78,10 @@ int userIDExists(int id)
     fclose(fp);
     return 0;
 };
+/* =========================================================
+   TRANSACTION HANDLING
+   ========================================================= */
+// Records a transaction into file
 void recordTransaction(char username[], char type[], float amount)
 {
     FILE *fp = fopen("trans.dat", "ab");
@@ -53,6 +102,7 @@ void recordTransaction(char username[], char type[], float amount)
 
     fclose(fp);
 };
+// Displays all transactions to the admin
 void viewAllTransactions()
 {
     FILE *fp = fopen("trans.dat", "rb");
@@ -78,6 +128,7 @@ void viewAllTransactions()
 
     fclose(fp);
 };
+// Displays transactions of particular user to the admin
 void searchTransactions()
 {
     FILE *fp = fopen("trans.dat", "rb");
@@ -147,6 +198,41 @@ void searchTransactions()
 
     fclose(fp);
 };
+// Displays user transactions to the user
+void viewMyTransactions(char username[])
+{
+    FILE *fp = fopen("trans.dat", "rb");
+    struct Transaction t;
+    int found = 0;
+
+    if(fp == NULL)
+    {
+        printf("NO TRANSACTIONS FOUND.\n");
+        return;
+    }
+
+    printf("\n========== YOUR TRANSACTIONS ==========\n");
+
+    while(fread(&t, sizeof(t), 1, fp))
+    {
+        if(strcmp(t.username, username) == 0)
+        {
+            printf("TYPE: %s | AMOUNT: %.2f\n", t.type, t.amount);
+            found = 1;
+        }
+    }
+
+    if(!found)
+        printf("NO TRANSACTIONS FOUND.\n");
+
+    printf("======================================\n");
+
+    fclose(fp);
+};
+/* =========================================================
+   ADMIN FUNCTIONS
+   ========================================================= */
+// Adds a new user to the system by admin
 void addUser()
 {
     int result;
@@ -160,6 +246,7 @@ void addUser()
 
     struct User u;
 
+     // Input validation for user ID
     do
     {
     printf("ENTER USER ID: ");
@@ -171,6 +258,8 @@ void addUser()
         while(getchar() != '\n');
     }
     } while(result != 1);
+
+    // Check if ID already exists
     if(userIDExists(u.userID)==0)
     {
         printf("ENTER USERNAME: ");
@@ -197,6 +286,7 @@ void addUser()
         fclose(fp);
     }
 };
+// Displays all of the current users to admin
 void viewUsers()
 {
     FILE *fp = fopen("user.dat", "rb");
@@ -220,6 +310,7 @@ void viewUsers()
 
     fclose(fp);
 };
+// Removes a user from the system by admin
 void deleteUser()
 {
     FILE *fp = fopen("user.dat", "rb");
@@ -234,10 +325,12 @@ void deleteUser()
         return;
     }
 
+    //this loop is to input user ID
     do
     {
         printf("ENTER USER ID: ");
         result = scanf("%d", &id);
+        //this condition checks if the input ID is not anything other than integer
         if(result != 1)
         {
             printf("INVALID INPUT! PLEASE INPUT A NUMBER.\n");
@@ -245,6 +338,7 @@ void deleteUser()
         }
     } while(result != 1);
 
+    //this loop searches for input ID in user.dat file
     while(fread(&u, sizeof(u), 1, fp))
     {
         if(u.userID != id)
@@ -268,6 +362,7 @@ void deleteUser()
     else
         printf("USER NOT FOUND!\n");
 };
+// Displays and Edits the loan interest rate
 void adminLoanInterest()
 {
     FILE *fp;
@@ -326,6 +421,10 @@ void adminLoanInterest()
     printf("!!!!!!!!!!!!!!INTEREST RATE UPDATED SUCCESSFULLY!!!!!!!!!!!!!!\n");
     printf("*****************************************************************************\n");
 }
+/* =========================================================
+   ADMIN PANEL
+   ========================================================= */
+// Displays multiple options for the admin to perform
 void adminMenu()
 {
     char c,p1,p2,p3;
@@ -515,70 +614,10 @@ void adminMenu()
         }
     }while(c!='f'&&c!='F');
 };
-int loginUser(struct User *loggedInUser)
-{
-    FILE *fp = fopen("user.dat", "rb");
-    struct User u;
-    int id;
-    char pass[20];
-
-    if(fp == NULL)
-    {
-         printf("\n*****************************************************************************\n");
-        printf("!!!!!!!!!!!!!!NO USERS FOUND!!!!!!!!!!!!!!");
-         printf("\n*****************************************************************************\n");
-        return 0;
-    }
-
-    printf("ENTER USER ID: ");
-    scanf("%d", &id);
-
-    printf("ENTER PASSWORD: ");
-    scanf(" %19s", pass);
-
-    while(fread(&u, sizeof(u), 1, fp))
-    {
-        if(u.userID == id && strcmp(u.password, pass) == 0)
-        {
-            *loggedInUser = u;
-            fclose(fp);
-            return 1;
-        }
-    }
-
-    fclose(fp);
-    return 0;
-};
-void viewMyTransactions(char username[])
-{
-    FILE *fp = fopen("trans.dat", "rb");
-    struct Transaction t;
-    int found = 0;
-
-    if(fp == NULL)
-    {
-        printf("NO TRANSACTIONS FOUND.\n");
-        return;
-    }
-
-    printf("\n========== YOUR TRANSACTIONS ==========\n");
-
-    while(fread(&t, sizeof(t), 1, fp))
-    {
-        if(strcmp(t.username, username) == 0)
-        {
-            printf("TYPE: %s | AMOUNT: %.2f\n", t.type, t.amount);
-            found = 1;
-        }
-    }
-
-    if(!found)
-        printf("NO TRANSACTIONS FOUND.\n");
-
-    printf("======================================\n");
-
-    fclose(fp);
-};
+/* =========================================================
+   USER OPERATIONS (BANKING)
+   ========================================================= */
+//updates the user.dat file
 void updateUser(struct User updatedUser)
 {
     FILE *fp = fopen("user.dat", "rb");
@@ -610,6 +649,7 @@ void updateUser(struct User updatedUser)
     remove("user.dat");
     rename("temp.dat", "user.dat");
 };
+// Issues loan from bank into the account
 void takeLoan(struct User *u)
 {
     float amount;
@@ -637,6 +677,7 @@ void takeLoan(struct User *u)
 
     updateUser(*u);
 };
+// Deposit money into account
 void deposit(struct User *u)
 {
     float amount;
@@ -659,8 +700,13 @@ void deposit(struct User *u)
     printf("\n*****************************************************************************\n");
     recordTransaction(u->username, "DEPOSIT", amount);
 
+    // Update user in file
     updateUser(*u);
 };
+/* =========================================================
+   USER OPERATIONS (LOAN)
+   ========================================================= */
+// Withdraw money from account
 void withdraw(struct User *u)
 {
     float amount;
@@ -693,6 +739,7 @@ void withdraw(struct User *u)
 
     updateUser(*u);
 };
+// Pays loan from account
 void payLoan(struct User *u)
 {
     float amount;
@@ -737,6 +784,7 @@ void payLoan(struct User *u)
 
     updateUser(*u);
 };
+// Gives interest rate information to getLoanInterest() function
 float getLoanInterest()
 {
     FILE *fp = fopen("loan.dat", "rb");
@@ -752,6 +800,7 @@ float getLoanInterest()
 
     return rate;
 }
+// Calculates simple interest on loan
 void calculateLoanDetails(struct User *u)
 {
     float rate = getLoanInterest();
@@ -784,6 +833,7 @@ void calculateLoanDetails(struct User *u)
         return;
     }
 
+    // Simple Interest Formula
     interest = (u->loan * rate * time) / 100;
     total = u->loan + interest;
 
@@ -795,6 +845,10 @@ void calculateLoanDetails(struct User *u)
     printf("TOTAL PAYABLE: %.2f\n", total);
     printf("=============================================\n");
 };
+/* =========================================================
+   USER PANEL
+   ========================================================= */
+// Displays multiple options for the user to perform
 void userMenu(struct User *u)
 {
     int choice;
@@ -839,6 +893,10 @@ void userMenu(struct User *u)
 
     } while(choice != 6);
 };
+/* =========================================================
+   MAIN PANEL
+   ========================================================= */
+// Main function
 int main()
 {
     FILE *fp;
