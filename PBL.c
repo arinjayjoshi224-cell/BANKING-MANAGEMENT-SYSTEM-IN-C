@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<time.h>
 /* =========================================================
    STRUCTURES
    ========================================================= */
@@ -17,6 +18,7 @@ struct Transaction {
     char username[20];
     char type[10];
     float amount;
+    time_t timestamp;
 };
 /* =========================================================
    USER ID CHECK FUNCTION
@@ -78,6 +80,13 @@ int loginUser(struct User *loggedInUser)
     fclose(fp);
     return 0;
 };
+// Formats a time_t value into a readable string
+void formatTimestamp(time_t ts, char *buf)
+{
+    struct tm *tinfo = localtime(&ts);
+    // Format: DD-MM-YYYY HH:MM:SS
+    strftime(buf, 20, "%d-%m-%Y %H:%M:%S", tinfo);
+}
 /* =========================================================
    TRANSACTION HANDLING
    ========================================================= */
@@ -97,6 +106,7 @@ void recordTransaction(char username[], char type[], float amount)
     strcpy(t.username, username);
     strcpy(t.type, type);
     t.amount = amount;
+    t.timestamp = time(NULL);
 
     fwrite(&t, sizeof(t), 1, fp);
 
@@ -116,15 +126,17 @@ void viewAllTransactions()
         return;
     }
 
-    printf("\n========== ALL TRANSACTIONS ==========\n");
+    printf("\n========================================= ALL TRANSACTIONS =========================================\n");
 
     while(fread(&t, sizeof(t), 1, fp))
     {
-        printf("USER: %s | TYPE: %s | AMOUNT: %.2f\n",
-               t.username, t.type, t.amount);
+        char timebuf[20];
+        formatTimestamp(t.timestamp, timebuf);
+        printf("USER: %-20s | TYPE: %-15s | AMOUNT: %10.2f | TIME: %s\n",
+               t.username, t.type, t.amount, timebuf);
     }
 
-    printf("=====================================\n");
+    printf("====================================================================================================\n");
 
     fclose(fp);
 };
@@ -180,13 +192,16 @@ void searchTransactions()
         return;
     }
 
-    printf("\n====== TRANSACTIONS FOR %s (ID: %d) ======\n", username, id);
+    printf("\n============== TRANSACTIONS FOR %s (ID: %d) ==============\n", username, id);
 
     while(fread(&t, sizeof(t), 1, fp))
     {
         if(strcmp(t.username, username) == 0)
         {
-            printf("TYPE: %s | AMOUNT: %.2f\n", t.type, t.amount);
+            char timebuf[20];
+            formatTimestamp(t.timestamp, timebuf);
+            printf("TYPE: %-15s | AMOUNT: %10.2f | TIME: %s\n",
+                   t.type, t.amount, timebuf);
             found = 1;
         }
     }
@@ -194,7 +209,7 @@ void searchTransactions()
     if(!found)
         printf("NO TRANSACTIONS FOUND.\n");
 
-    printf("=======================================================\n");
+    printf("=======================================================================\n");
 
     fclose(fp);
 };
@@ -211,13 +226,16 @@ void viewMyTransactions(char username[])
         return;
     }
 
-    printf("\n========== YOUR TRANSACTIONS ==========\n");
+    printf("\n========================== YOUR TRANSACTIONS ==========================\n");
 
     while(fread(&t, sizeof(t), 1, fp))
     {
         if(strcmp(t.username, username) == 0)
         {
-            printf("TYPE: %s | AMOUNT: %.2f\n", t.type, t.amount);
+            char timebuf[20];
+            formatTimestamp(t.timestamp, timebuf);
+            printf("TYPE: %-15s | AMOUNT: %10.2f | TIME: %s\n",
+                   t.type, t.amount, timebuf);
             found = 1;
         }
     }
@@ -225,7 +243,7 @@ void viewMyTransactions(char username[])
     if(!found)
         printf("NO TRANSACTIONS FOUND.\n");
 
-    printf("======================================\n");
+    printf("=======================================================================\n");
 
     fclose(fp);
 };
@@ -864,7 +882,8 @@ void userMenu(struct User *u)
         printf("3. PAY LOAN\n");
         printf("4. GET LOAN\n");
         printf("5. VIEW LOAN DETAILS\n");
-        printf("6. EXIT\n");
+        printf("6. VIEW TRANSACTION HISTORY\n");
+        printf("7. EXIT\n");
         printf("ENTER CHOICE: ");
         scanf("%d", &choice);
 
@@ -886,12 +905,15 @@ void userMenu(struct User *u)
                 calculateLoanDetails(u);
                 break;
             case 6:
+                viewMyTransactions(u->username);
+                break;
+            case 7:
                 break;
             default:
                 printf("!!!!!!!!!!!!!!PLEASE SELECT A VALID OPTION!!!!!!!!!!!!!!");
         }
 
-    } while(choice != 6);
+    } while(choice != 7);
 };
 /* =========================================================
    MAIN PANEL
